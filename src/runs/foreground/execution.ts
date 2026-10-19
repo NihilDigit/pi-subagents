@@ -4,6 +4,7 @@
 
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
+import { resolveChildFastMode } from "../../shared/fast-mode.ts";
 import type { Message } from "@earendil-works/pi-ai";
 import { discoverAgents, formatUnknownAgentError, unknownAgentDiagnosticContext, type AgentConfig } from "../../agents/agents.ts";
 import { alignForkedSessionCwd } from "../../shared/fork-session-cwd.ts";
@@ -361,6 +362,7 @@ async function runSingleAttempt(
 ): Promise<SingleResult> {
 	const effectiveThinking = options.thinkingOverride ?? agent.thinking;
 	const modelArg = applyThinkingSuffix(model, effectiveThinking, options.thinkingOverride !== undefined);
+	const fast = resolveChildFastMode(options.fast, agent.fast, options.parentSessionId, modelArg);
 	assertThinkingWithinCeiling({ model: modelArg, configThinking: effectiveThinking, ceiling: options.thinkingCeiling, agent: agent.name, runId: options.runId });
 	const expectedModelForVerification = shared.verifyModel ? modelArg : undefined;
 	const resolvedThinking = resolveEffectiveThinking(modelArg, effectiveThinking);
@@ -420,7 +422,7 @@ async function runSingleAttempt(
 		parentSessionFile: options.parentSessionFile,
 		forkCacheKey: options.context === "fork" ? deriveForkPromptCacheKey(options.parentSessionId) : undefined,
 		structuredOutput: options.structuredOutput,
-		fast: options.fast ?? agent.fast,
+		fast,
 		toolBudget: options.toolBudget,
 		permissionRules,
 		permissionAuditPath,
@@ -444,7 +446,6 @@ async function runSingleAttempt(
 	}
 
 	const effectiveSystemPrompt = shared.systemPrompt;
-	const fast = options.fast ?? agent.fast;
 	const { launchContractDigest } = resolveLaunchBinding({
 		agent,
 		task: shared.originalTask ?? task,

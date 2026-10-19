@@ -30,8 +30,8 @@ const script = String.raw`
 	}, { get(target, property) { return property in target ? target[property] : () => undefined; } });
 	const ctx = {
 		cwd: process.cwd(), isIdle() { return false; }, hasUI: false, model: undefined,
-		ui: { setWidget() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } },
-		sessionManager: { getSessionId() { return "lifecycle-session"; }, getSessionFile() { return null; }, getEntries() { return []; } },
+		ui: { setStatus() {}, setWidget() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } },
+		sessionManager: { getSessionId() { return "lifecycle-session"; }, getSessionFile() { return null; }, getBranch() { return []; }, getEntries() { return []; } },
 		modelRegistry: { getAvailable() { return []; } },
 	};
 	registerSubagentExtension(pi);

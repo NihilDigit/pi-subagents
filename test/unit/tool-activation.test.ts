@@ -49,9 +49,9 @@ function createRuntime(messages: any[] = [], excluded: string[] = [], missingApi
 	} });
 	const context = {
 		cwd: process.cwd(), isIdle() { return false; }, hasUI: false, model: options.model as any,
-		ui: { setWidget() {}, theme: { fg(_name: string, text: string) { return text; }, bg(_name: string, text: string) { return text; }, bold(text: string) { return text; } } },
+		ui: { setStatus() {}, setWidget() {}, theme: { fg(_name: string, text: string) { return text; }, bg(_name: string, text: string) { return text; }, bold(text: string) { return text; } } },
 		sessionManager: {
-			getSessionId() { return "activation-session"; }, getSessionFile() { return null; }, getEntries() { return []; },
+			getSessionId() { return "activation-session"; }, getSessionFile() { return null; }, getBranch() { return []; }, getEntries() { return []; },
 			buildSessionContext() { return { messages }; },
 		},
 		modelRegistry: { getAvailable() { return []; } },

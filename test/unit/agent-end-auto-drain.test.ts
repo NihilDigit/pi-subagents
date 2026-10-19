@@ -28,11 +28,11 @@ const script = String.raw`
 	}, { get(target, property) { return property in target ? target[property] : () => undefined; } });
 	const ctx = {
 		cwd: projectRoot, hasUI: false, model: undefined, isIdle() { return false; },
-		ui: { setWidget() {}, requestRender() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } },
+		ui: { setStatus() {}, setWidget() {}, requestRender() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } },
 		sessionManager: {
 			getSessionId() { return "agent-end-drain-session"; },
 			getSessionFile() { return null; },
-			getEntries() { return []; },
+			getBranch() { return []; }, getEntries() { return []; },
 		},
 		modelRegistry: { getAvailable() { return []; } },
 	};

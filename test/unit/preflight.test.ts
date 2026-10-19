@@ -9,6 +9,7 @@ import { resolveSubagentLaunchContract, SUBAGENT_LAUNCH_CONTRACT_VERSION } from 
 import { clearSkillCache } from "../../src/agents/skills.ts";
 import { computeMcpServerHash } from "../../src/runs/shared/mcp-direct-tool-allowlist.ts";
 import { TEMP_ARTIFACTS_DIR } from "../../src/shared/types.ts";
+import { setSessionFastMode } from "../../src/shared/fast-mode.ts";
 
 let tempDir = "";
 let previousHome: string | undefined;
@@ -347,6 +348,25 @@ Worker.
 			assert.equal(disabled.contract.tools.runtimeExtensions.some((entry) => entry.endsWith("fast-mode-extension.ts")), false);
 			assert.notEqual(enabled.contract.launchContractDigest, disabled.contract.launchContractDigest);
 		}
+	});
+
+	it("inherits parent priority for native openai aliases and honors explicit off", async () => {
+		const cwd = path.join(tempDir, "inherited-fast-repo");
+		writeAgent(path.join(cwd, ".pi", "agents", "worker.md"), "---\nname: worker\ndescription: Worker\nmodel: openai/probe\n---\nWorker.");
+		const parentSessionId = "preflight-fast-parent";
+		setSessionFastMode(parentSessionId, true);
+		try {
+			const base = { agent: "worker", cwd, task: "Run", parentSessionId,
+				availableModels: [{ provider: "openai", id: "probe", fullId: "openai/probe" }] };
+			const inherited = await resolveSubagentLaunchContract(base);
+			const off = await resolveSubagentLaunchContract({ ...base, fast: false });
+			assert.equal(inherited.ok, true);
+			assert.equal(off.ok, true);
+			if (inherited.ok && off.ok) {
+				assert.ok(inherited.contract.tools.runtimeExtensions.some((entry) => entry.endsWith("fast-mode-extension.ts")));
+				assert.equal(off.contract.tools.runtimeExtensions.some((entry) => entry.endsWith("fast-mode-extension.ts")), false);
+			}
+		} finally { setSessionFastMode(parentSessionId, undefined); }
 	});
 
 	it("enforces maxThinking before a child launch and accepts levels at the ceiling", async () => {

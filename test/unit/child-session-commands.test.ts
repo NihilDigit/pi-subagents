@@ -26,7 +26,7 @@ function fakePi(override?: ToolDefinition, commandOverride?: ToolDefinition) {
 				const extensions = [{ path: "/ambient.ts", tools: new Map([...(override ? [["bash", { definition: override }]] as const : []), ...(commandOverride ? [["subagent_command", { definition: commandOverride }]] as const : [])]) }];
 				for (const hook of this.options.extensionFactories) {
 					const registered = new Map();
-					await hook.factory({ registerTool(tool) { registered.set(tool.name, { definition: tool }); } });
+					await hook.factory({ on() { return () => {}; }, registerTool(tool) { registered.set(tool.name, { definition: tool }); } });
 					extensions.push({ path: `<inline:${hook.name}>`, tools: registered });
 				}
 				this.result = this.options.extensionsOverride({ extensions, errors: [], runtime: {} });

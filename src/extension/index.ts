@@ -13,6 +13,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { registerSessionFastMode } from "../shared/fast-mode.ts";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -282,6 +283,7 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
 		return;
 	}
 	const runtimeRegistry = getRuntimeRegistry();
+	registerSessionFastMode(pi);
 	setMainThinkingLevelSource(() => readMainThinkingLevel(() => pi.getThinkingLevel()));
 
 	DIRS.results = ensureAccessibleDir(DIRS.results);

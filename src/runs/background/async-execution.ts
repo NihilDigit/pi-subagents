@@ -4,6 +4,7 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { resolveChildFastMode } from "../../shared/fast-mode.ts";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1227,7 +1228,7 @@ export function buildAsyncRunnerSteps(id: string, params: AsyncRunnerStepBuildPa
 		}
 		const launchRuleError = applyWatchdogLaunchRules({ cwd: machine ? runnerCwd : stepCwd, agent: a.name, model: selectedModel, warn: (violation) => sendRuleViolationWarning(ctx.pi, violation) });
 		if (launchRuleError) throw new AsyncStartValidationError(launchRuleError);
-		const fast = s.fast ?? params.fast ?? a.fast;
+		const fast = resolveChildFastMode(s.fast ?? params.fast, a.fast, launchParentSessionId, selectedModel);
 		const requiredExtensions = externalRunner ? [] : params.requiredExtensions ?? ctx.childRuntime?.requiredExtensions ?? registeredExtensions;
 		const toolPlan = resolvePiLaunchToolPlan({
 			tools: a.tools,
@@ -2078,6 +2079,7 @@ export function executeAsyncSingle(
 		}
 	}
 	const requiredExtensions = externalRunner ? [] : params.requiredExtensions ?? ctx.childRuntime?.requiredExtensions ?? registeredExtensions;
+	const fast = resolveChildFastMode(params.fast, agentConfig.fast, ctx.parentSessionId ?? ctx.currentSessionId, selectedModel);
 	const toolPlan = resolvePiLaunchToolPlan({
 		tools: agentConfig.tools,
 		excludeTools: agentConfig.excludeTools,
@@ -2089,7 +2091,7 @@ export function executeAsyncSingle(
 		cwd: runnerCwd,
 		requireReadTool: Boolean(resolvedSkills.length),
 		structuredOutput: Boolean(params.structuredOutputSchema),
-		fast: params.fast ?? agentConfig.fast,
+		fast,
 		model: selectedModel,
 		capabilityCeiling,
 		inheritedCapabilityCeiling: ctx.childRuntime?.capabilityCeiling,
@@ -2098,7 +2100,6 @@ export function executeAsyncSingle(
 		runtimeSnapshotHost: ctx.pi,
 	});
 	const launchResolvedExtensions = externalRunner ? undefined : projectLaunchResolvedChildExtensions(toolPlan);
-	const fast = params.fast ?? agentConfig.fast;
 	const launchThinking = resolveEffectiveThinking(selectedModel, effectiveThinking);
 	const { definitionDigest, launchContractDigest } = resolveLaunchBinding({
 		agent: agentConfig,
@@ -2139,7 +2140,7 @@ export function executeAsyncSingle(
 		...(sessionFile ? { sessionFile } : {}),
 		cwd: runnerCwd,
 		...(selectedModel ? { model: selectedModel } : {}),
-		...(params.fast ?? recoveryAgentConfig.fast ? { fast: params.fast ?? recoveryAgentConfig.fast } : {}),
+		...(fast !== undefined ? { fast } : {}),
 		...(recoveryAgentConfig.modelProvider ? { modelProvider: recoveryAgentConfig.modelProvider } : {}),
 		...(modelOrigin === "inherited" ? { modelOverrideFromParent: true } : {}),
 		modelOrigin,
@@ -2216,7 +2217,7 @@ export function executeAsyncSingle(
 						requestedCwd: machine?.cwd ?? params.requestedCwd ?? runnerCwd,
 						model: selectedModel,
 						...(contextLimit !== undefined ? { contextLimit } : {}),
-						...(params.fast ?? agentConfig.fast ? { fast: params.fast ?? agentConfig.fast } : {}),
+						...(fast !== undefined ? { fast } : {}),
 						thinking: resolveEffectiveThinking(selectedModel, effectiveThinking),
 						...(thinkingCeiling ? { thinkingCeiling } : {}),
 						...(requestedModel ? { requestedModel } : {}),

@@ -32,7 +32,7 @@ describe("async compaction resume", () => {
 			}, { get(target, prop) { return prop in target ? target[prop] : () => undefined; } });
 			let idle = false;
 			const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-			const ctx = { cwd: process.cwd(), isIdle() { return idle; }, hasUI: true, ui: { setWidget(key, value) { widgets.push([key, value]); }, requestRender() { renders++; }, onTerminalInput() { return () => {}; }, getEditorText() { return ""; }, notify() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } }, sessionManager: { getSessionId() { return "compact-session"; }, getSessionFile() { return null; }, getEntries() { return []; } }, modelRegistry: { getAvailable() { return []; } } };
+			const ctx = { cwd: process.cwd(), isIdle() { return idle; }, hasUI: true, ui: { setStatus() {}, setWidget(key, value) { widgets.push([key, value]); }, requestRender() { renders++; }, onTerminalInput() { return () => {}; }, getEditorText() { return ""; }, notify() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } }, sessionManager: { getSessionId() { return "compact-session"; }, getSessionFile() { return null; }, getBranch() { return []; }, getEntries() { return []; } }, modelRegistry: { getAvailable() { return []; } } };
 			registerSubagentExtension(pi);
 			for (const handler of handlers.get("session_start")) await handler({}, ctx);
 			sent.length = 0;
@@ -119,7 +119,7 @@ describe("async compaction resume", () => {
 				events,
 				on(name, handler) { handlers.set(name, [...(handlers.get(name) ?? []), handler]); },
 			}, { get(target, prop) { return prop in target ? target[prop] : () => undefined; } });
-			const ctx = { cwd: process.cwd(), isIdle() { return false; }, hasUI: true, ui: { setWidget(key, value) { widgets.push([key, value]); }, requestRender() {}, onTerminalInput() { return () => {}; }, getEditorText() { return ""; }, notify() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } }, sessionManager: { getSessionId() { return "mid-run-session"; }, getSessionFile() { return null; }, getEntries() { return []; } }, modelRegistry: { getAvailable() { return []; } } };
+			const ctx = { cwd: process.cwd(), isIdle() { return false; }, hasUI: true, ui: { setStatus() {}, setWidget(key, value) { widgets.push([key, value]); }, requestRender() {}, onTerminalInput() { return () => {}; }, getEditorText() { return ""; }, notify() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } }, sessionManager: { getSessionId() { return "mid-run-session"; }, getSessionFile() { return null; }, getBranch() { return []; }, getEntries() { return []; } }, modelRegistry: { getAvailable() { return []; } } };
 			registerSubagentExtension(pi);
 			for (const handler of handlers.get("session_start")) await handler({}, ctx);
 			for (const handler of handlers.get("agent_start")) await handler();
@@ -149,7 +149,7 @@ describe("async compaction resume", () => {
 				sendMessage(message, options) { sent.push({ message, options }); }, getSessionName() { return undefined; },
 			}, { get(target, prop) { return prop in target ? target[prop] : () => undefined; } });
 			let stale = false;
-			const ctx = { cwd: process.cwd(), isIdle() { return false; }, get hasUI() { if (stale) throw new Error("This extension ctx is stale after session replacement or reload."); return true; }, ui: { setWidget() {}, requestRender() {}, onTerminalInput() { return () => {}; }, getEditorText() { return ""; }, notify() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } }, sessionManager: { getSessionId() { return "stale-context-session"; }, getSessionFile() { return null; }, getEntries() { return []; } }, modelRegistry: { getAvailable() { return []; } } };
+			const ctx = { cwd: process.cwd(), isIdle() { return false; }, get hasUI() { if (stale) throw new Error("This extension ctx is stale after session replacement or reload."); return true; }, ui: { setStatus() {}, setWidget() {}, requestRender() {}, onTerminalInput() { return () => {}; }, getEditorText() { return ""; }, notify() {}, theme: { fg(_name, text) { return text; }, bg(_name, text) { return text; }, bold(text) { return text; } } }, sessionManager: { getSessionId() { return "stale-context-session"; }, getSessionFile() { return null; }, getBranch() { return []; }, getEntries() { return []; } }, modelRegistry: { getAvailable() { return []; } } };
 			registerSubagentExtension(pi);
 			for (const handler of handlers.get("session_start")) await handler({}, ctx);
 			sent.length = 0;

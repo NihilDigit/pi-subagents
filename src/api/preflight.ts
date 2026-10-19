@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { resolveChildFastMode } from "../shared/fast-mode.ts";
 import { fileURLToPath } from "node:url";
 import { discoverAgentSnapshot, findBlockingAgentDiagnostic, formatUnknownAgentError, resolveAgentName, unknownAgentDiagnosticContext, type AgentConfig, type AgentDiscoveryAllResult, type AgentScope, type AgentSource } from "../agents/agents.ts";
 import { projectScopeRequiresTrustMessage, resolveExecutionAgentScope } from "../agents/agent-scope.ts";
@@ -448,7 +449,7 @@ export async function resolveSubagentLaunchContract(input: SubagentLaunchContrac
 	}
 	let toolPlan: PiLaunchToolPlan;
 	const permissionRules = resolvePermissionRules(loadConfig().permissions, agent.permissions);
-	const fast = input.fast ?? agent.fast;
+	const fast = resolveChildFastMode(input.fast, agent.fast, input.parentSessionId, model);
 	const requiredExtensions = externalRunner ? [] : resolveRequiredChildExtensions(input.parentSessionId);
 	try {
 		toolPlan = resolvePiLaunchToolPlan({

@@ -46,14 +46,14 @@ function makeState(sessionId: string | null, ctx: unknown): SubagentState {
 	};
 }
 
-function makeCtx(sessionId: string, sessionFile: string | null = null): { cwd: string; isIdle: () => boolean; hasUI: boolean; sessionManager: { getSessionId: () => string; getSessionFile: () => string | null; getEntries: () => [] } } {
+function makeCtx(sessionId: string, sessionFile: string | null = null): { cwd: string; isIdle: () => boolean; hasUI: boolean; sessionManager: { getSessionId: () => string; getSessionFile: () => string | null; getBranch: () => [], getEntries: () => [] } } {
 	return {
 		cwd: process.cwd(),
 		isIdle() { return false; }, hasUI: false,
 		sessionManager: {
 			getSessionId: () => sessionId,
 			getSessionFile: () => sessionFile,
-			getEntries: () => [],
+			getBranch: () => [], getEntries: () => [],
 		},
 	};
 }
@@ -757,10 +757,10 @@ describe("supervisor ask registration", () => {
 				const ctx = {
 					cwd: root,
 					isIdle() { return false; }, get hasUI() { if (stale) throw new Error("This extension ctx is stale after session replacement or reload."); return false; },
-					ui: { setWidget() {}, requestRender() {}, onTerminalInput() { return () => {}; }, notify() {}, theme: { fg(_name, text) { return text; }, bold(text) { return text; } } },
+					ui: { setStatus() {}, setWidget() {}, requestRender() {}, onTerminalInput() { return () => {}; }, notify() {}, theme: { fg(_name, text) { return text; }, bold(text) { return text; } } },
 					sessionManager: {
 						getSessionId() { if (stale) throw new Error("stale session manager"); return owner; },
-						getSessionFile() { return sessionFile; }, getEntries() { return []; },
+						getSessionFile() { return sessionFile; }, getBranch() { return []; }, getEntries() { return []; },
 					},
 					modelRegistry: { getAvailable() { return []; } },
 				};

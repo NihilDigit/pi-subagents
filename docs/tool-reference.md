@@ -400,6 +400,11 @@ The optional `mode` is `steer` by default and keeps the current interrupt behavi
 
 Only a top-level single run may interrupt after the acknowledgment deadline and recover after a further 15-second pause/revival bound; durable multi-child and nested runs never auto-interrupt. Recovery launches a replacement only after the source is confirmed paused, a valid persisted session exists, and deadline, turn, and tool budgets remain. It preserves the original child contract and remaining limits; otherwise the source stays paused with an explicit failure. Late acceptance is recorded but cannot cancel committed recovery.
 
+Native `steer` and `auto` cancel the active model stream or cancellable tool,
+then continue the same child session with the guidance. They do not restart the
+child or discard its history. A tool that ignores cancellation may still finish
+its side effects. Explicit `follow_up` remains queued.
+
 The persisted `steering` ledger retains 20 requests and replaces the old `steerCount`/`lastSteerAt` fields.
 
 The `/subagents-steer <run-id> [--child <child-id>] <message>` slash command is the host bridge for non-TUI sessions and RPC hosts. `--child` accepts the stable child identity shown in status output and inspect replies (workflow key, child run id, or `step:<index>`) and resolves it to the child index before steering; unknown or ambiguous child ids fail closed. Flags are parsed only between the run id and the message tail — once the message starts, `--` tokens are message text. The bridge always disables pause-and-revive recovery (`steeringRecovery: false`), matching the extension RPC `nonRecoveringSteer` guarantee so the caller keeps authority over the exact child it addressed.

@@ -463,6 +463,24 @@ export function createDefaultChildSessionFactory(options: DefaultChildSessionFac
 				? await pi.ModelRuntime.create()
 				: await sharedRuntime(pi);
 			const agentDir = getAgentDir();
+			let steeringNeedsTurn = false;
+			const steeringBoundary: ChildHookExtension = {
+				name: "pi-subagents:steering",
+				factory(api) {
+					api.on("after_provider_response", () => { steeringNeedsTurn = false; });
+					api.on("agent_before_settle", (event) => {
+						// A cancelled tool can drain the steering queue without starting
+						// a new response. Continue once while its user input is pending.
+						if (!steeringNeedsTurn) return;
+						steeringNeedsTurn = false;
+						return event.context.canContinue ? { continue: true } : {
+							entries: [{ type: "custom_message", customType: "pi-subagents:steering-continuation",
+								content: "Continue using the supervisor guidance already received after the interrupted operation.", display: false }],
+							continue: true,
+						};
+					});
+				},
+			};
 			const commands = launch.runtime.runId && launch.runtime.agent && launch.runtime.childIndex !== undefined
 				&& launch.tools?.includes("bash") && launch.tools.includes(CHILD_COMMAND_TOOL)
 				&& !launch.excludeTools?.includes("bash") && !launch.excludeTools?.includes(CHILD_COMMAND_TOOL)
@@ -505,7 +523,7 @@ export function createDefaultChildSessionFactory(options: DefaultChildSessionFac
 				noThemes: true,
 				noContextFiles: launch.noContextFiles,
 				additionalExtensionPaths: builtinMcp ? [...launch.extensionPaths, "builtin:mcp"] : launch.extensionPaths,
-				extensionFactories: [...launch.hooks, ...(commands ? [{ name: "pi-subagents:commands", factory: (api: ExtensionAPI) => {
+				extensionFactories: [...launch.hooks, steeringBoundary, ...(commands ? [{ name: "pi-subagents:commands", factory: (api: ExtensionAPI) => {
 					api.registerTool(commands.wrap(pi.createBashTool(launch.cwd, { commandPrefix: settingsManager.getShellCommandPrefix(), shellPath: settingsManager.getShellPath() }) as unknown as ToolDefinition));
 					api.registerTool(commands.tool());
 				} }] : []), ...codemode, ...(builtinMcp ? [builtinMcp] : [])],
@@ -632,7 +650,15 @@ export function createDefaultChildSessionFactory(options: DefaultChildSessionFac
 				subscribe: (listener) => session.subscribe((event) => listener(event as unknown as ChildSessionEvent)),
 				prompt: (text) => session.prompt(text),
 				...(commands ? { finishCommands: () => commands.finish() } : {}),
-				steer: (text) => session.steer(text),
+				steer: async (text) => {
+					await session.steer(text);
+					// Cancel the active core request, leaving the session run alive to
+					// drain the saved input. Session.abort() would end that whole run.
+					if (session.getSteeringMessages?.().includes(text)) {
+						steeringNeedsTurn = true;
+						session.agent?.abort?.();
+					}
+				},
 				followUp: (text) => session.followUp(text),
 				abort: () => session.abort(),
 				hasQueuedMessages: () => session.agent?.hasQueuedMessages?.() === true,

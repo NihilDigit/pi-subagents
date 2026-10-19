@@ -8,6 +8,7 @@ import { buildAsyncRunnerSteps, assertClaudeCodeOverrideIsLocal, DEFAULT_ASYNC_T
 import type { AgentConfig } from "../../src/agents/agents.ts";
 import { SUBAGENT_PROCESS_TERMINAL_EVENT } from "../../src/shared/types.ts";
 import { registerRequiredChildExtensions } from "../../src/api/required-child-extensions.ts";
+import { setSessionFastMode } from "../../src/shared/fast-mode.ts";
 
 const agent = (name: string, toolBudget?: AgentConfig["toolBudget"]): AgentConfig => ({
 	name,
@@ -30,6 +31,19 @@ const ctx = {
 };
 
 describe("async runner execution", () => {
+	it("snapshots inherited priority and explicit false in background steps", () => {
+		setSessionFastMode(ctx.currentSessionId, true);
+		try {
+			const result = buildAsyncRunnerSteps("inherited-fast-run", {
+				chain: [{ agent: "worker", task: "inherit" }, { agent: "worker", task: "explicit off", fast: false }],
+				agents: [{ ...agent("worker"), model: "openai/probe" }],
+				availableModels: [{ provider: "openai", id: "probe", fullId: "openai/probe" }], ctx,
+			});
+			assert.equal(result.error, undefined);
+			assert.equal(result.steps?.[0]?.fast, true);
+			assert.equal(result.steps?.[1]?.fast, false);
+		} finally { setSessionFastMode(ctx.currentSessionId, undefined); }
+	});
 	it("propagates static parallel machine placement before agent pins and rejects group worktrees", { skip: process.platform === "win32" ? "Herdr saved-machine launches are unsupported on Windows" : undefined }, (t) => {
 		const bin = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-bin-"));
 		const herdr = path.join(bin, "herdr");
